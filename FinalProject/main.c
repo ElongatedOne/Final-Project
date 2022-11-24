@@ -24,7 +24,7 @@
  *      Pin PC4				HC-SR04 Trig
  *      Pin PC5				HC-SR04 Echo
  */
-#define F_CPU 1000000UL
+#define F_CPU 16000000UL
 #define BAUDRATE 9600
 #define BAUD_PRESCALLER (((F_CPU / (BAUDRATE * 16UL))) - 1)
 
@@ -63,17 +63,17 @@ void init() {
 	PORTD |= (1<<3); //enable pull up
 	PORTD |= (1<<2); //enable pull up
 	PORTD |= (1<<7);
-	TCCR0B = 0x05;
-	TCCR0A = 0x83;
-	OCR0A = 100;
+	TCCR0B = 0x00;
+	TCCR0A = 0x00;
+	OCR0A = 0;
 	
 	//PCICR = (1<<PCIE1);						// Enable PCINT[14:8] we use pin C5 which is PCINT13
 	//PCMSK1 = (1<<PCINT13);
 	EIMSK |= (1<<INT1); //enable INT1
-	//EIMSK |= (1<<INT0); //enable INT0
+	EIMSK |= (1<<INT0); //enable INT0
 	//EICRA |= (1<<ISC11);
 	EICRA |= (1<<ISC10); //INT1 any logic change	
-	//EICRA |= (1<<ISC01); //INT0 falling edge trigger				
+	EICRA |= (1<<ISC00); //INT0 falling edge trigger				
 	sei();									// Enable Global Interrupts
 }
 
@@ -147,11 +147,16 @@ int main() {
 	int state = 0;
 	//toggleMotorPower();
 	init();
+	while (power==1) {
+		//wait
+	}
+	TCCR0B = 0x05;
+	TCCR0A = 0x83;
 	startup_sequence();
  	while (1) {
 		 
 		
-		_delay_ms(600); 						// To allow sufficient time between queries (60ms min)
+		_delay_ms(400); 						// To allow sufficient time between queries (60ms min)
 		PORTD |= (1<<4);						// Set trigger high
 		_delay_us(10);							// for 10uS
 		PORTD &= ~(1<<4);
@@ -191,6 +196,9 @@ ISR(INT1_vect)
 		newread = 1;
 		//OCR0A = 255;
 	}
+}
+ISR (INT0_vect) {
+	power = (power+1)%2;
 }
 
 
