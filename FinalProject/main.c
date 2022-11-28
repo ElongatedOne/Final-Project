@@ -42,7 +42,7 @@ static volatile int i = 0;
 static volatile int newread = 0;
 static volatile int rising = 1;
 static volatile uint8_t cm = 0;
-static volatile int power = 1;
+static volatile int power = 0;
 
 /*******************************************INITALIZE PORTS, TIMER, AND INTURRUPTS*******************************************/
 void init() {
@@ -56,6 +56,9 @@ void init() {
 	//TCNT1 = 0;								// Initial timer value
 	//TCCR1B |= (1<<CS10);					// Timer without prescaller. Since default clock for atmega328p is 1Mhz period is 1uS
 	//TCCR1B |= (1<<ICES1);					// First capture on rising edge
+	DDRC |= (1<<0);
+	DDRC |= (1<<1);
+	DDRC |= (1<<2);
 
 	DDRD |= (1<<6);
 	DDRD |= (1<<4);
@@ -73,7 +76,7 @@ void init() {
 	EIMSK |= (1<<INT0); //enable INT0
 	//EICRA |= (1<<ISC11);
 	EICRA |= (1<<ISC10); //INT1 any logic change	
-	EICRA |= (1<<ISC00); //INT0 falling edge trigger				
+	EICRA |= (1<<ISC01); //INT0 falling edge trigger				
 	sei();									// Enable Global Interrupts
 }
 
@@ -86,14 +89,22 @@ void wait1ms(){
 	{}
 	TCCR2B = 0; //stop timer
 	TIFR2 = 1<<OCF2A;
+	return;
 }
 
 void delay(int ms){
 	for(int i = 0; i < ms; i++){
 		wait1ms();
 	}
+	return;
 }
 
+void toggleLight() {
+	PORTB ^= (1<<0);
+	PORTB ^= (1<<1);
+	PORTB ^= (1<<2);
+	return;
+}
 
 int change_duty_cycle(int sensor_read) {
 	if (sensor_read > 55) {
@@ -140,6 +151,7 @@ void startup_sequence() {
 		setOCRA(0);
 		delay(500);
 	}
+	return;
 }
 
 int main() {
@@ -147,14 +159,19 @@ int main() {
 	int state = 0;
 	//toggleMotorPower();
 	init();
-	while (power==1) {
+	while (power==0) {
 		//wait
 	}
 	TCCR0B = 0x05;
 	TCCR0A = 0x83;
 	startup_sequence();
  	while (1) {
-		 
+		 if (power==0) {
+			 TCCR0B = 0x00;
+			 TCCR0A = 0x83;
+			 PORTD &= ~(0<<6);
+			 
+		 }
 		
 		_delay_ms(400); 						// To allow sufficient time between queries (60ms min)
 		PORTD |= (1<<4);						// Set trigger high
@@ -171,6 +188,8 @@ void update_value(int value)
 	TCNT0 = 0;
 	OCR0A = change_duty_cycle(value);
 	TCCR0B = 0x05;
+	TCCR0A = 0x83;
+	return;
 }
 
 ISR(INT1_vect)
