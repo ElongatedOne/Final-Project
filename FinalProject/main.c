@@ -70,6 +70,8 @@ void init() {
 	TCCR0A = 0x00;
 	OCR0A = 0;
 	
+	DDRB |= 0xFF;
+	
 	//PCICR = (1<<PCIE1);						// Enable PCINT[14:8] we use pin C5 which is PCINT13
 	//PCMSK1 = (1<<PCINT13);
 	EIMSK |= (1<<INT1); //enable INT1
@@ -78,6 +80,38 @@ void init() {
 	EICRA |= (1<<ISC10); //INT1 any logic change	
 	EICRA |= (1<<ISC01); //INT0 falling edge trigger				
 	sei();									// Enable Global Interrupts
+}
+
+void initADC() {
+	//DDRC = 0x00;
+	ADMUX |= (1 << REFS0); //reference voltage on AVCC, and use ADC0
+	ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); //ADC clock prescaler / 128
+	//ADCSRA |= (1<<ADPS0) | (1<<ADPS1);
+	ADCSRA |= (1<<ADEN);
+	DDRB = 0xFF;
+}
+
+void doADC() {
+	   //read from the potentiometer to determine what mode the user has selected
+
+	   uint16_t potVal;
+	   uint16_t threshold = 5;
+
+	   ADMUX = (ADMUX & 0xF0) | (0 & 0x0F);
+	   ADCSRA |= (1 << ADSC); //start ADC conversion
+	   while((ADCSRA & (1 << ADSC))) //wait until ADSC bit is clear, i.e., ADC conversion is done
+	   {}
+	   //read ADC value in
+	   uint8_t theLowADC = ADCL;
+	   potVal = ADCH << 8 | theLowADC;
+	   //potVal = ADC;
+	   // potentiometerValue = ADC;
+	   if (potVal > threshold) {
+		   PORTB = 0x00;
+	   }
+	   else {
+		   PORTB = 0xFF;
+	   }
 }
 
 void wait1ms(){
@@ -100,9 +134,9 @@ void delay(int ms){
 }
 
 void toggleLight() {
-	PORTB ^= (1<<0);
-	PORTB ^= (1<<1);
-	PORTB ^= (1<<2);
+	PORTB |= (1<<0);
+	PORTB |= (1<<1);
+	PORTB |= (1<<2);
 	return;
 }
 
@@ -155,6 +189,7 @@ void startup_sequence() {
 }
 
 int main() {
+	
 	int setup_done = 0;
 	int state = 0;
 	//toggleMotorPower();
@@ -165,14 +200,20 @@ int main() {
 	TCCR0B = 0x05;
 	TCCR0A = 0x83;
 	startup_sequence();
+	initADC();
  	while (1) {
+		 //_delay_ms(300);
 		 if (power==0) {
 			 TCCR0B = 0x00;
 			 TCCR0A = 0x83;
-			 PORTD &= ~(0<<6);
+			 PORTD &= ~(1<<6);
 			 
 		 }
-		
+		//cli();
+		//_delay_ms(100);
+		doADC();
+		//_delay_ms(100);
+		//sei();
 		_delay_ms(400); 						// To allow sufficient time between queries (60ms min)
 		PORTD |= (1<<4);						// Set trigger high
 		_delay_us(10);							// for 10uS
