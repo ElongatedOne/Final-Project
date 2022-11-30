@@ -43,6 +43,7 @@ static volatile int newread = 0;
 static volatile int rising = 1;
 static volatile uint8_t cm = 0;
 static volatile int power = 0;
+static volatile int setup_done = 0;
 
 /*******************************************INITALIZE PORTS, TIMER, AND INTURRUPTS*******************************************/
 void init() {
@@ -117,7 +118,7 @@ void doADC() {
 void wait1ms(){
 	TCNT2 = 0x00;  //reset timer
 	OCR2A = 0x60;
-	TCCR2A |= (1<<WGM21)|(1<<COM2A1)|(1<<COM2A0); //CTC, compare with OCR1A
+	TCCR2A |= (1<<WGM21)|(1<<COM2A1)|(1<<COM2A0); //CTC, compare with OCR2A
 	TCCR2B |= (1<<CS20)|(1<<CS22); //prescale clock to 1/1024 * 16MHz ~= 16kHz
 	while((TIFR2&(1<<OCF2A))==0)
 	{}
@@ -190,7 +191,6 @@ void startup_sequence() {
 
 int main() {
 	
-	int setup_done = 0;
 	int state = 0;
 	//toggleMotorPower();
 	init();
@@ -201,7 +201,8 @@ int main() {
 	TCCR0A = 0x83;
 	startup_sequence();
 	initADC();
- 	while (1) {
+ 	while (power==1) {
+		 setup_done = 1;
 		 //_delay_ms(300);
 		 if (power==0) {
 			 TCCR0B = 0x00;
@@ -220,6 +221,9 @@ int main() {
 		PORTD &= ~(1<<4);
 			
 	}
+	setup_done = 0;
+	power = 0;
+	main();
 	
 }
 
@@ -258,7 +262,12 @@ ISR(INT1_vect)
 	}
 }
 ISR (INT0_vect) {
-	power = (power+1)%2;
+	if (setup_done==0) {
+		power = 1;
+	}
+	else {
+		power = 0;
+	}
 }
 
 
