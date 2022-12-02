@@ -8,6 +8,8 @@
 
 
 #define F_CPU 16000000UL
+#define BAUDRATE 9600
+#define BAUD_PRESCALLER (((F_CPU / (BAUDRATE * 16UL))) - 1)
 
 #include <stdio.h>
 #include <avr/io.h>
@@ -50,6 +52,50 @@ void init() {
 	EICRA |= (1<<ISC01); //INT0 falling edge trigger				
 	sei();									// Enable Global Interrupts
 }
+
+void USART_init(void){
+	UBRR0H = (uint8_t)(BAUD_PRESCALLER>>8); //set baud rate
+	UBRR0L = (uint8_t)(BAUD_PRESCALLER);
+	UCSR0B = (1<<RXEN0)|(1<<TXEN0); //enable transmit
+	UCSR0C = (3<<UCSZ00); //set 8-bit (default)
+}
+
+void waiting_USART() {
+	unsigned char string[100] = "Press button to start ranging ";
+	
+	i = 0;
+	while(string[i] != 0) /* print the String  "Hello from ATmega328p" */
+	{
+		while (!( UCSR0A & (1<<UDRE0))); /* Wait for empty transmit buffer*/
+		UDR0 = string[i];            /* Put data into buffer, sends the data */
+		i++;                             /* increment counter           */
+	}
+}
+
+void starting_USART() {
+	unsigned char string[100] = "Starting Ranging ";
+	
+	i = 0;
+	while(string[i] != 0) /* print the String  "Hello from ATmega328p" */
+	{
+		while (!( UCSR0A & (1<<UDRE0))); /* Wait for empty transmit buffer*/
+		UDR0 = string[i];            /* Put data into buffer, sends the data */
+		i++;                             /* increment counter           */
+	}
+}
+
+void shutdown_USART() {
+	unsigned char string[100] = "Stopping Ranging ";
+	
+	i = 0;
+	while(string[i] != 0) /* print the String  "Hello from ATmega328p" */
+	{
+		while (!( UCSR0A & (1<<UDRE0))); /* Wait for empty transmit buffer*/
+		UDR0 = string[i];            /* Put data into buffer, sends the data */
+		i++;                             /* increment counter           */
+	}
+}
+
 
 void initADC() {
 	ADMUX |= (1 << REFS0); //reference voltage on AVCC, and use ADC0
@@ -170,13 +216,16 @@ void startup_sequence() {
 int main() {
 	
 	init();
+	USART_init();
 	while (power==0) {
-		//wait
+		waiting_USART();
+		delay(200);
 	}
 	TCCR0B = 0x05;
 	TCCR0A = 0x83;
 	startup_sequence();
 	initADC();
+	starting_USART();
  	while (power==1) {
 		 setup_done = 1;
 		 if (power==0) {
@@ -194,6 +243,7 @@ int main() {
 		PORTD &= ~(1<<4);
 			
 	}
+	shutdown_USART();
 	setup_done = 0;
 	power = 0;
 	main();
