@@ -64,11 +64,11 @@ void waiting_USART() {
 	unsigned char string[100] = "Press button to start ranging ";
 	
 	i = 0;
-	while(string[i] != 0) /* print the String  "Hello from ATmega328p" */
+	while(string[i] != 0) 
 	{
-		while (!( UCSR0A & (1<<UDRE0))); /* Wait for empty transmit buffer*/
-		UDR0 = string[i];            /* Put data into buffer, sends the data */
-		i++;                             /* increment counter           */
+		while (!( UCSR0A & (1<<UDRE0))); //Wait for empty transmit buffer
+		UDR0 = string[i];            // Put data into buffer, sends the data
+		i++;                             // increment counter           
 	}
 }
 
@@ -76,11 +76,11 @@ void starting_USART() {
 	unsigned char string[100] = "Starting Ranging ";
 	
 	i = 0;
-	while(string[i] != 0) /* print the String  "Hello from ATmega328p" */
+	while(string[i] != 0) 
 	{
-		while (!( UCSR0A & (1<<UDRE0))); /* Wait for empty transmit buffer*/
-		UDR0 = string[i];            /* Put data into buffer, sends the data */
-		i++;                             /* increment counter           */
+		while (!( UCSR0A & (1<<UDRE0))); 
+		UDR0 = string[i];           
+		i++;                                      
 	}
 }
 
@@ -88,11 +88,11 @@ void shutdown_USART() {
 	unsigned char string[100] = "Stopping Ranging ";
 	
 	i = 0;
-	while(string[i] != 0) /* print the String  "Hello from ATmega328p" */
+	while(string[i] != 0) 
 	{
-		while (!( UCSR0A & (1<<UDRE0))); /* Wait for empty transmit buffer*/
-		UDR0 = string[i];            /* Put data into buffer, sends the data */
-		i++;                             /* increment counter           */
+		while (!( UCSR0A & (1<<UDRE0))); 
+		UDR0 = string[i];
+		i++;                             
 	}
 }
 
@@ -255,7 +255,6 @@ void update_value(int value)
 	TCCR0B = 0;
 	TCNT0 = 0;
 	OCR0A = change_duty_cycle(value);
-	//OCR0A = alternative_duty_change(value);
 	TCCR0B = 0x05;
 	TCCR0A = 0x83;
 	return;
